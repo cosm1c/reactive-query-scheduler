@@ -1,10 +1,11 @@
+import io.gatling.sbt.GatlingPlugin
 import sbt.Keys._
 
 val akkaVersion = "2.4.10"
 
 lazy val root = (project in file("."))
+  .enablePlugins(GatlingPlugin)
   .settings(
-
     name := "reactive-query-scheduler",
 
     version := "1.0",
@@ -22,7 +23,11 @@ lazy val root = (project in file("."))
       "ch.qos.logback" % "logback-classic" % "1.1.7" % Runtime,
 
       "com.typesafe.akka" %% "akka-testkit" % "2.3.11" % Test,
-      "org.scalatest" %% "scalatest" % "2.2.4" % Test),
+      "org.scalatest" %% "scalatest" % "2.2.4" % Test,
+
+      "io.gatling.highcharts" % "gatling-charts-highcharts" % "2.2.2",
+      "io.gatling" % "gatling-test-framework" % "2.2.2"
+    ),
 
     scalacOptions ++= Seq(
       "-target:jvm-1.8",
@@ -34,7 +39,7 @@ lazy val root = (project in file("."))
       "-language:implicitConversions",
       "-unchecked",
       "-Xfatal-warnings",
-      "-Xlint",
+      "-Xlint:-missing-interpolator,_", // Causes Gatling string interpolation to crash build
       "-Yno-adapted-args",
       //"-Ywarn-dead-code", // N.B. doesn't work well with the ??? hole
       "-Ywarn-numeric-widen",

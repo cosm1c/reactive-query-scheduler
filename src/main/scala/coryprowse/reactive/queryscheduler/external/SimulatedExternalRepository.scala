@@ -11,7 +11,7 @@ import scala.util.Random
 object SimulatedExternalRepository {
 
   val minDuration = 20 milliseconds
-  val maxDuration = 100 milliseconds
+  val maxDuration = 10 seconds
 
   private val durationDifferenceMs: Int = (maxDuration - minDuration).toMillis.toInt
   private val minDurationMs: Long = minDuration.toMillis

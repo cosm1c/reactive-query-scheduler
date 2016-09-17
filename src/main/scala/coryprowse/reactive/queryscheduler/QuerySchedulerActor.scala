@@ -42,7 +42,7 @@ object QuerySchedulerActor {
 class QuerySchedulerActor(repository: ExternalRepository)(implicit val clock: Clock) extends Actor with ActorLogging {
 
   implicit val executionContext = context.system.dispatcher
-  implicit val timeout = Timeout(2 seconds)
+  implicit val timeout = Timeout(15 seconds)
 
   val executerPool = context.actorOf(BalancingPool(5).props(QueryExecuterActor.props(new SimulatedExternalRepository)), "querySchedulerPool")
   var queryCache = Map.empty[ExternalQuery, JobCacheEntry]

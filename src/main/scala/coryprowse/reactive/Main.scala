@@ -19,11 +19,12 @@ import scala.language.postfixOps
 object Main extends LazyLogging {
 
   def main(args: Array[String]): Unit = {
+
     implicit val system = ActorSystem("ReactiveQueryScheduler")
-    implicit val materializer = ActorMaterializer()
     implicit val executionContext = system.dispatcher
 
-    implicit val timeout = Timeout(15 seconds)
+    implicit val materializer = ActorMaterializer()
+    implicit val timeout = Timeout(5 minutes)
 
     //    implicit val queryMarshaller: ToResponseMarshaller[ExternalQuery] = ???
     //    implicit val queryUnMarshaller: FromRequestUnmarshaller[ExternalQuery] = ???
@@ -62,5 +63,4 @@ object Main extends LazyLogging {
       .flatMap(_.unbind())
       .onComplete(_ ⇒ system.terminate())
   }
-
 }
