@@ -4,13 +4,12 @@ import io.gatling.core.Predef._
 import io.gatling.core.scenario.Simulation
 import io.gatling.http.Predef._
 
-import scala.concurrent.duration._
 import scala.language.postfixOps
 
 class GatlingPerformanceTest extends Simulation {
 
   val httpConf = http
-    .warmUp("http://www.google.com")
+    .warmUp("http://localhost:8080")
     .baseURL("http://localhost:8080")
     .disableCaching
     .disableAutoReferer
@@ -18,8 +17,8 @@ class GatlingPerformanceTest extends Simulation {
   val queriesFeeder: IndexedSeq[Map[String, String]] =
     ('a' to 'j').map(ch =>
       Map(
-        "queryName" -> s"$ch",
-        "postBody" -> s"""{query:"$ch"}"""
+        "queryName" -> s""""$ch"""",
+        "postBody" -> s"""{"queryName":"$ch","query":"$ch query"}"""
       ))
 
   setUp(
@@ -27,8 +26,10 @@ class GatlingPerformanceTest extends Simulation {
       .feed(queriesFeeder.random)
       .exec(http("${queryName}")
         .post("/executeQuery")
+        .header("Content-Type", "application/json")
         .body(StringBody("${postBody}")))
       .inject(
+        //atOnceUsers(1)
         rampUsers(1000) over (10 seconds)
       )
   ).protocols(httpConf)

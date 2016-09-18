@@ -6,7 +6,7 @@ import scala.language.postfixOps
 
 object ExternalRepository {
 
-  type ExternalQuery = String
+  case class ExternalQuery(queryName: String, query: String)
   type ExternalResult = String
 
   case class ExecuteExternalQuery(query: ExternalQuery)

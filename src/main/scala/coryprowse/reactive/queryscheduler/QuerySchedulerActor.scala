@@ -45,6 +45,8 @@ class QuerySchedulerActor(repository: ExternalRepository)(implicit val clock: Cl
   implicit val timeout = Timeout(15 seconds)
 
   val executerPool = context.actorOf(BalancingPool(5).props(QueryExecuterActor.props(new SimulatedExternalRepository)), "querySchedulerPool")
+
+  // TODO: Removal of enties from the queryCache to prevent out of memory errors
   var queryCache = Map.empty[ExternalQuery, JobCacheEntry]
 
   def receive = {
