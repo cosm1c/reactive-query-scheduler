@@ -61,9 +61,8 @@ class HealthCheckerActor()(implicit clock: Clock) extends Actor with ActorLoggin
 
   private def fetchHealthUpdate(): Future[TotalHealthUpdate] = {
     // TODO: generate map of queryName -> jsonPostBody
-    val queriesToTest = List(
-      ExternalQuery("a", """{"queryName":"a","query":"a query"}""")
-    )
+    val queriesToTest = ('a' to 'j').map(ch =>
+      ExternalQuery(ch.toString, s"""{"queryName":"$ch","query":"$ch query"}"""))
 
     Future.sequence(queriesToTest.map(checkQueryHealth))
       .map(list => list.map(i => (i.queryName, i)))
