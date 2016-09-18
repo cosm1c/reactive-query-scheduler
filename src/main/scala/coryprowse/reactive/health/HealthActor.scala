@@ -6,7 +6,7 @@ import akka.actor.{Actor, ActorLogging, ActorRef, Props}
 import akka.pattern.{ask, pipe}
 import akka.util.Timeout
 import coryprowse.reactive.health.HealthActor.{QueryStatus, RequestHealthStatus}
-import coryprowse.reactive.health.HealthCheckerActor.HealthUpdate
+import coryprowse.reactive.health.HealthCheckerActor.TotalHealthUpdate
 import coryprowse.reactive.queryscheduler.external.ExternalRepository.{ExecuteExternalQuery, ExternalQueryResult}
 
 import scala.collection.immutable
@@ -17,7 +17,8 @@ object HealthActor {
 
   case object RequestHealthStatus
 
-  case class QueryStatus(isAvailable: Boolean, lastChecked: Instant, lastError: Option[String] = None) {
+  // TODO: Store start and end times of healthChecks
+  case class QueryStatus(queryName: String, isAvailable: Boolean, lastUpdated: Instant, lastErrorMessage: Option[String] = None) {
     def isUnavailable = !isAvailable
   }
 
@@ -37,16 +38,18 @@ class HealthActor(querySchedulerActor: ActorRef)(implicit clock: Clock) extends 
     case msg@ExecuteExternalQuery(query) =>
       val maybeStatus = queryStatusMap.get(query.queryName)
       if (maybeStatus.exists(_.isUnavailable)) {
-        // TODO: Response indicating query is unavailable
+        // TODO: Response with reason for query being unavailable
+        log.debug(s"""Query "${query.queryName} is now Unavailable""")
         val now = clock.instant
         sender() ! ExternalQueryResult(now, now, query, "Query is currently unavailable")
       } else {
+        log.debug(s"""Query "${query.queryName} is now Available""")
         pipe(querySchedulerActor ? msg).to(sender())
         ()
       }
 
     case RequestHealthStatus => sender() ! queryStatusMap
 
-    case HealthUpdate(updatedStatusMap) => queryStatusMap = updatedStatusMap
+    case TotalHealthUpdate(updatedStatusMap) => queryStatusMap = updatedStatusMap
   }
 }

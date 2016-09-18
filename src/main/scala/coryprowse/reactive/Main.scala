@@ -1,6 +1,6 @@
 package coryprowse.reactive
 
-import java.time.Clock
+import java.time.{Clock, Instant}
 
 import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
@@ -29,8 +29,9 @@ object Main extends LazyLogging with SprayJsonSupport with DefaultJsonProtocol {
     implicit val clock = Clock.systemUTC()
     implicit val system = ActorSystem("ReactiveQueryScheduler")
     implicit val executionContext = system.dispatcher
-
     implicit val materializer = ActorMaterializer()
+
+    // TODO: move to config
     implicit val timeout = Timeout(5 minutes)
 
     // For potential encoding and decoding of binary payloads
@@ -79,7 +80,7 @@ object Main extends LazyLogging with SprayJsonSupport with DefaultJsonProtocol {
 
     val bindingFuture = Http().bindAndHandle(route, "0.0.0.0", 8080)
 
-    println(s"Server online at http://0.0.0.0:8080/\nPress RETURN to stop...")
+    println(s"[${Instant.now()}] Server online at http://0.0.0.0:8080/\nPress RETURN to stop...")
     StdIn.readLine()
 
     bindingFuture

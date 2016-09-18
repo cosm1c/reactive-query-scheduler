@@ -6,7 +6,7 @@ import javax.management.ObjectName
 
 import akka.actor.{Actor, ActorLogging, Props}
 import coryprowse.reactive.health.HealthActor.QueryStatus
-import coryprowse.reactive.health.HealthCheckerActor.HealthUpdate
+import coryprowse.reactive.health.HealthCheckerActor.TotalHealthUpdate
 import coryprowse.reactive.jmx.AkkaJmxRegistrar._
 
 import scala.collection.JavaConverters._
@@ -46,7 +46,7 @@ class HealthMBeanActor extends Actor with ActorLogging with HealthMBeanActorMBea
   override def getCurrentQueryStatus: util.Map[String, String] = new util.HashMap(queryStatusMap.mapValues(_.toString).asJava)
 
   def receive = {
-    case HealthUpdate(statusMap) => queryStatusMap = statusMap
+    case TotalHealthUpdate(statusMap) => queryStatusMap = statusMap
   }
 
 }
