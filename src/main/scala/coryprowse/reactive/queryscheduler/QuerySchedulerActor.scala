@@ -36,7 +36,7 @@ object QuerySchedulerActor {
     }
   }
 
-  def props(repository: ExternalRepository, clock: Clock = Clock.systemUTC()) = Props(new QuerySchedulerActor(repository)(clock))
+  def props(repository: ExternalRepository)(implicit clock: Clock) = Props(new QuerySchedulerActor(repository))
 }
 
 class QuerySchedulerActor(repository: ExternalRepository)(implicit val clock: Clock) extends Actor with ActorLogging {

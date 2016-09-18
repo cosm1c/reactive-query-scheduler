@@ -1,60 +1,52 @@
 package coryprowse.reactive.health
 
-import java.time.Instant
-import java.util
-import javax.management.ObjectName
+import java.time.{Clock, Instant}
 
-import akka.actor.{Actor, ActorLogging, Props}
-import coryprowse.reactive.health.HealthActor.{FunctionStatus, RequestHealthStatus}
+import akka.actor.{Actor, ActorLogging, ActorRef, Props}
+import akka.pattern.{ask, pipe}
+import akka.util.Timeout
+import coryprowse.reactive.health.HealthActor.{QueryStatus, RequestHealthStatus}
+import coryprowse.reactive.health.HealthCheckerActor.HealthUpdate
+import coryprowse.reactive.queryscheduler.external.ExternalRepository.{ExecuteExternalQuery, ExternalQueryResult}
 
 import scala.collection.immutable
+import scala.concurrent.duration._
+import scala.language.postfixOps
 
 object HealthActor {
 
   case object RequestHealthStatus
 
-  case class FunctionStatus(isOpen: Boolean, lastChecked: Instant, lastError: Option[String] = None)
-
-  def props = Props[HealthActor]
-}
-
-class HealthActor extends Actor with ActorLogging with HealthActorMBean {
-
-  import coryprowse.reactive.jmx.AkkaJmxRegistrar._
-
-  import scala.collection.JavaConverters._
-
-  // Because JMX and the actor model access from different threads
-  @volatile private[this] var functionStatus = immutable.Map.empty[String, FunctionStatus]
-
-  override val getActorPath: String = self.path.toStringWithoutAddress
-
-  val objName = new ObjectName("coryprowse.reactive.health", {
-    new java.util.Hashtable(
-      Map(
-        "name" -> "HealthActor"
-      ).asJava
-    )
-  })
-
-  override def getCurrentFunctionStatus: util.Map[String, String] = new util.HashMap(functionStatus.mapValues(_.toString).asJava)
-
-  override def preStart(): Unit = {
-    registerToMBeanServer(this, objName)
-    ()
+  case class QueryStatus(isAvailable: Boolean, lastChecked: Instant, lastError: Option[String] = None) {
+    def isUnavailable = !isAvailable
   }
 
-  override def postStop(): Unit = unregisterFromMBeanServer(objName)
+  def props(querySchedulerActor: ActorRef)(implicit clock: Clock) =
+    Props(new HealthActor(querySchedulerActor))
+}
+
+class HealthActor(querySchedulerActor: ActorRef)(implicit clock: Clock) extends Actor with ActorLogging {
+
+  implicit val executionContext = context.system.dispatcher
+  implicit val timeout = Timeout(15 seconds)
+
+  val healthCheckerActor = context.actorOf(HealthCheckerActor.props)
+  var queryStatusMap = immutable.Map.empty[String, QueryStatus]
 
   def receive = {
-    case RequestHealthStatus => sender() ! functionStatus
+    case msg@ExecuteExternalQuery(query) =>
+      val maybeStatus = queryStatusMap.get(query.queryName)
+      if (maybeStatus.exists(_.isUnavailable)) {
+        // TODO: Response indicating query is unavailable
+        val now = clock.instant
+        sender() ! ExternalQueryResult(now, now, query, "Query is currently unavailable")
+      } else {
+        pipe(querySchedulerActor ? msg).to(sender())
+        ()
+      }
+
+    case RequestHealthStatus => sender() ! queryStatusMap
+
+    case HealthUpdate(updatedStatusMap) => queryStatusMap = updatedStatusMap
   }
-
-}
-
-trait HealthActorMBean {
-
-  val getActorPath: String
-
-  def getCurrentFunctionStatus: util.Map[String, String]
 }
