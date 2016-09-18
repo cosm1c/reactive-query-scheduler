@@ -18,7 +18,7 @@ class GatlingPerformanceTest extends Simulation {
   val queriesFeeder: IndexedSeq[Map[String, String]] =
     ('a' to 'j').map(ch =>
       Map(
-        "queryName" -> s""""$ch"""",
+        "queryName" -> s"""$ch""",
         "postBody" -> s"""{"queryName":"$ch","query":"$ch query"}"""
       ))
 

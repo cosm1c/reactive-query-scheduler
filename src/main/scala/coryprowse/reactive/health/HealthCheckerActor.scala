@@ -34,7 +34,8 @@ class HealthCheckerActor()(implicit clock: Clock) extends Actor with ActorLoggin
 
   implicit val materializer: ActorMaterializer = ActorMaterializer(ActorMaterializerSettings(context.system))
   implicit val executionContext = context.system.dispatcher
-  implicit val timeout = Timeout(15 seconds)
+  // TODO: move to config
+  implicit val timeout = Timeout(5 minutes)
 
   val http = Http(context.system)
   val healthMBeanActor = context.actorOf(HealthMBeanActor.props)

@@ -29,7 +29,8 @@ object HealthActor {
 class HealthActor(querySchedulerActor: ActorRef)(implicit clock: Clock) extends Actor with ActorLogging {
 
   implicit val executionContext = context.system.dispatcher
-  implicit val timeout = Timeout(15 seconds)
+  // TODO: move to config
+  implicit val timeout = Timeout(5 minutes)
 
   val healthCheckerActor = context.actorOf(HealthCheckerActor.props)
   var queryStatusMap = immutable.Map.empty[String, QueryStatus]
