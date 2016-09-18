@@ -6,7 +6,7 @@ import akka.actor.{Actor, ActorLogging, Props}
 import akka.pattern.{ask, pipe}
 import akka.routing.BalancingPool
 import akka.util.Timeout
-import coryprowse.reactive.queryscheduler.QuerySchedulerActor.JobCacheEntry
+import coryprowse.reactive.queryscheduler.QuerySchedulerActor.QueryCacheEntry
 import coryprowse.reactive.queryscheduler.external.ExternalRepository.{ExecuteExternalQuery, ExternalQuery, ExternalQueryResult}
 import coryprowse.reactive.queryscheduler.external.{ExternalRepository, SimulatedExternalRepository}
 
@@ -19,10 +19,10 @@ object QuerySchedulerActor {
   // TODO: Move to config
   val cacheTimeMs: Long = (1 seconds).toMillis
 
-  case class JobCacheEntry(query: ExternalQuery,
-                           eventualResult: Future[ExternalQueryResult],
-                           lastStarted: Instant,
-                           maybeLastEnded: Option[Instant] = None) {
+  case class QueryCacheEntry(query: ExternalQuery,
+                             eventualResult: Future[ExternalQueryResult],
+                             lastStarted: Instant,
+                             maybeLastEnded: Option[Instant] = None) {
 
     def isFresh()(implicit clock: Clock): Boolean = queryInProgress || cacheEntryFresh
 
@@ -47,7 +47,7 @@ class QuerySchedulerActor(repository: ExternalRepository)(implicit val clock: Cl
   val executerPool = context.actorOf(BalancingPool(5).props(QueryExecuterActor.props(new SimulatedExternalRepository)), "querySchedulerPool")
 
   // TODO: Removal of enties from the queryCache to prevent out of memory errors
-  var queryCache = Map.empty[ExternalQuery, JobCacheEntry]
+  var queryCache = Map.empty[ExternalQuery, QueryCacheEntry]
 
   def receive = {
 
@@ -57,7 +57,7 @@ class QuerySchedulerActor(repository: ExternalRepository)(implicit val clock: Cl
         .getOrElse {
           val startedInstant = clock.instant()
           val eventualResult: Future[ExternalQueryResult] = (executerPool ? msg).mapTo[ExternalQueryResult]
-          queryCache += query -> JobCacheEntry(query, eventualResult, startedInstant)
+          queryCache += query -> QueryCacheEntry(query, eventualResult, startedInstant)
           pipe(eventualResult).to(self)
         }
         .to(sender())
